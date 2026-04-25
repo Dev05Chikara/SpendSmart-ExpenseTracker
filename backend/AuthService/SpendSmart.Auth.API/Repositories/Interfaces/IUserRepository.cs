@@ -34,4 +34,11 @@ public interface IUserRepository
     /// <param name="user">The user to update.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task UpdateUserAsync(User user);
+
+    /// <summary>
+    /// Gets a user by Google ID asynchronously.
+    /// </summary>
+    /// <param name="googleId">The Google ID to search for.</param>
+    /// <returns>The user if found; otherwise null.</returns>
+    Task<User?> GetUserByGoogleIdAsync(string googleId);
 }

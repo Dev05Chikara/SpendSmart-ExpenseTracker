@@ -63,4 +63,14 @@ public class UserRepository : IUserRepository
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
+
+    /// <summary>
+    /// Gets a user by Google ID asynchronously.
+    /// </summary>
+    /// <param name="googleId">The Google ID to search for.</param>
+    /// <returns>The user if found; otherwise null.</returns>
+    public async Task<User?> GetUserByGoogleIdAsync(string googleId)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId);
+    }
 }

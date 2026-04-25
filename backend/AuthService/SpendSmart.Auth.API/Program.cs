@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ITokenBlacklistRepository, TokenBlacklistRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
 // Add controllers
 builder.Services.AddControllers();

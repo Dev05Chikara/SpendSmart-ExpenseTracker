@@ -14,16 +14,22 @@ namespace SpendSmart.Auth.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IGoogleAuthService _googleAuthService;
     private readonly ILogger<UsersController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UsersController"/> class.
     /// </summary>
     /// <param name="userService">The user service.</param>
+    /// <param name="googleAuthService">The Google authentication service.</param>
     /// <param name="logger">The logger.</param>
-    public UsersController(IUserService userService, ILogger<UsersController> logger)
+    public UsersController(
+        IUserService userService,
+        IGoogleAuthService googleAuthService,
+        ILogger<UsersController> logger)
     {
         _userService = userService;
+        _googleAuthService = googleAuthService;
         _logger = logger;
     }
 
@@ -250,6 +256,36 @@ public class UsersController : ControllerBase
         {
             _logger.LogError($"Logout error: {ex.Message}");
             return StatusCode(500, new ApiResponse<string>(false, "An error occurred while logging out."));
+        }
+    }
+
+    /// <summary>
+    /// Authenticates a user using Google OAuth ID token.
+    /// </summary>
+    /// <param name="request">The Google authentication request containing ID token.</param>
+    /// <returns>User information and JWT authentication token.</returns>
+    [HttpPost("google-auth")]
+    public async Task<ActionResult<ApiResponse<LoginResponse>>> GoogleAuth([FromBody] GoogleAuthRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.IdToken))
+            {
+                return BadRequest(new ApiResponse<LoginResponse>(false, "ID token is required."));
+            }
+
+            var loginResponse = await _googleAuthService.AuthenticateWithGoogleAsync(request.IdToken);
+            return Ok(new ApiResponse<LoginResponse>(true, "Google authentication successful.", loginResponse));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning($"Google authentication failed: {ex.Message}");
+            return BadRequest(new ApiResponse<LoginResponse>(false, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Google auth error: {ex.Message}");
+            return StatusCode(500, new ApiResponse<LoginResponse>(false, "An error occurred during Google authentication."));
         }
     }
 }

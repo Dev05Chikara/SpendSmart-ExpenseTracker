@@ -5,9 +5,9 @@ A secure ASP.NET Core 10 microservice for user authentication and account manage
 ## Features
 
 - User registration & login with JWT authentication (24-hour expiry)
-- Profile management (get, update)
-- Password change & account deactivation
-- Secure logout with server-side token blacklisting
+- **Google OAuth authentication** (Sign with Google)
+- User profile management (get, update)
+- Admin user management (suspend, delete users)
 - Clean architecture with dependency injection
 - SQL Server with EF Core migrations
 
@@ -64,13 +64,14 @@ SpendSmart.Auth.API/
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | `/api/users/register` | Register new user | No |
-| POST | `/api/users/login` | Login & get JWT token | No |
-| GET | `/api/users/profile` | Get user profile | Yes |
-| PUT | `/api/users/update-profile` | Update profile (name, currency) | Yes |
-| PUT | `/api/users/change-password` | Change password | Yes |
-| POST | `/api/users/logout` | Logout & blacklist token | Yes |
-| DELETE | `/api/users/deactivate` | Deactivate account | Yes |
+| POST | `/api/auth/register` | Register new user | No |
+| POST | `/api/auth/login` | Login & get JWT token | No |
+| POST | `/api/auth/google` | Google OAuth login | No |
+| GET | `/api/auth/profile` | Get user profile | Yes |
+| PUT | `/api/auth/profile` | Update profile (name, currency, avatar) | Yes |
+| GET | `/api/admin/users` | List all users (Admin only) | Yes |
+| PUT | `/api/admin/users/{id}/suspend` | Suspend user (Admin only) | Yes |
+| DELETE | `/api/admin/users/{id}` | Delete user (Admin only) | Yes |
 
 **Protected endpoints** require JWT Bearer token in Authorization header:
 ```
@@ -79,27 +80,30 @@ Authorization: Bearer <jwt_token>
 
 ## Testing with Postman
 
-1. **Set Environment Variable:**
-   - Create environment: `baseUrl = http://localhost:5184`
+1. **User Registration & Login**:
+   - POST `/api/auth/register` with email & password
+   - POST `/api/auth/login` with email & password → Get JWT token
 
-2. **Test Flow:**
-   - POST `/api/users/login` → Get JWT token
-   - Copy token from response
-   - For protected endpoints, add Bearer token in Authorization tab
-   - Test each endpoint
+2. **Google OAuth**:
+   - POST `/api/auth/google` with Google ID token
+   - Returns JWT token same as email/password login
 
-3. **Verify Logout:**
-   - POST `/api/users/logout` with token
-   - Try protected endpoint again → Should get 401 (Token revoked)
+3. **Protected Endpoints**:
+   - GET `/api/auth/profile` with Bearer token → View user info
+   - PUT `/api/auth/profile` with Bearer token → Update name, currency, avatar
+
+4. **Admin Operations** (requires admin role):
+   - GET `/api/admin/users` → List all users
+   - PUT `/api/admin/users/{id}/suspend` → Suspend user account
+   - DELETE `/api/admin/users/{id}` → Delete user account
 
 ## Security
 
 - Password hashing with PBKDF2 (ASP.NET Core Identity)
-- JWT with HS256 algorithm
-- Token expiration (24 hours)
-- Server-side token blacklisting for logout
+- JWT with HS256 algorithm (24-hour expiration)
+- Google OAuth token validation with official Google library
 - SQL injection protection (parameterized queries)
-- Account deactivation support
+- Role-based access control (Admin/User roles)
 
 ## Response Format
 
@@ -121,10 +125,9 @@ All responses follow standardized format:
 
 ## Future Enhancements
 
-- Email verification
-- Password reset
-- Two-factor authentication
+- Email verification for new registrations
+- Password reset functionality
+- Two-factor authentication (2FA)
 - Refresh token rotation
-- OAuth 2.0 support
-- Rate limiting
-- Activity logging
+- Activity audit logging
+- Rate limiting on auth endpoints

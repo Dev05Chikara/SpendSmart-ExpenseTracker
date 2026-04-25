@@ -72,6 +72,13 @@ public class AppDbContext : DbContext
 
             entity.Property(e => e.LastLoginAt)
                 .IsRequired(false);
+
+            entity.Property(e => e.GoogleId)
+                .IsRequired(false)
+                .HasMaxLength(255);
+
+            entity.HasIndex(e => e.GoogleId)
+                .IsUnique();
         });
 
         // Configure TokenBlacklist entity

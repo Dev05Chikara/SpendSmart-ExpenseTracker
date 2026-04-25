@@ -44,4 +44,9 @@ public class User
     /// Gets or sets the date and time of the user's last login (UTC, nullable).
     /// </summary>
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Google ID for OAuth authentication (nullable).
+    /// </summary>
+    public string? GoogleId { get; set; }
 }
