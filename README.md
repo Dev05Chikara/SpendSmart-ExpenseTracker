@@ -9,8 +9,10 @@ ASP.NET Core 10 microservices platform for personal expense management. Built wi
 | **Auth Service** | 5184 | User authentication, JWT tokens, Google OAuth |
 | **Category Service** | 5004 | Expense category management (CRUD) |
 | **Expense Service** | 5002 | Expense tracking and reporting |
-| Income Service | 5003 | Income tracking (coming soon) |
-| Budget Service | 5005 | Budget management (coming soon) |
+| **Income Service** | 5003 | Income tracking and history |
+| **Budget Service** | 5005 | Budget limits and status |
+| **Report Service** | 5006 | Monthly, yearly, and category reports |
+| **Notification Service** | 5007 | User notifications and alerts |
 
 ## Prerequisites
 
@@ -39,6 +41,38 @@ dotnet run
 ### 3. Expense Service (5002)
 ```bash
 cd backend/ExpenseService/SpendSmart.Expense.API
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+### 4. Income Service (5003)
+```bash
+cd backend/IncomeService/SpendSmart.Income.API
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+### 5. Budget Service (5005)
+```bash
+cd backend/BudgetService/SpendSmart.Budget.API
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+### 6. Report Service (5006)
+```bash
+cd backend/ReportService/SpendSmart.Report.API
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+### 7. Notification Service (5007)
+```bash
+cd backend/NotificationService/SpendSmart.Notification.API
 dotnet restore
 dotnet ef database update
 dotnet run
@@ -98,6 +132,70 @@ dotnet run
 - Soft delete with IsActive flag
 - Performance indexes on (UserId, Date) and (UserId, CategoryId)
 - Payment modes: Credit Card, Debit Card, Cash, Check, Online
+
+---
+
+## Income Service (Port 5003)
+
+**Database:** SpendSmartIncomeDB
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/incomes` | List all incomes | Yes |
+| GET | `/api/incomes/{id}` | Get income by ID | Yes |
+| GET | `/api/incomes/by-date` | Filter by date range | Yes |
+| POST | `/api/incomes` | Create new income | Yes |
+| PUT | `/api/incomes/{id}` | Update income | Yes |
+| DELETE | `/api/incomes/{id}` | Delete income (soft) | Yes |
+
+---
+
+## Budget Service (Port 5005)
+
+**Database:** SpendSmartBudgetDB
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/budgets` | List all budgets | Yes |
+| GET | `/api/budgets/{id}` | Get budget by ID | Yes |
+| POST | `/api/budgets` | Create budget | Yes |
+| PUT | `/api/budgets/{id}` | Update budget | Yes |
+| DELETE | `/api/budgets/{id}` | Delete budget (soft) | Yes |
+
+**Features:**
+- User-scoped budgets
+- Soft delete with IsActive flag
+- Remaining amount and usage percentage in response
+
+---
+
+## Report Service (Port 5006)
+
+**Database:** SpendSmartReportDB
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/reports/monthly/{year}/{month}` | Monthly summary | Yes |
+| GET | `/api/reports/yearly/{year}` | Yearly summary | Yes |
+| GET | `/api/reports/category-breakdown/{year}/{month}` | Category breakdown | Yes |
+
+---
+
+## Notification Service (Port 5007)
+
+**Database:** SpendSmartNotificationDB
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/notifications` | List notifications | Yes |
+| POST | `/api/notifications` | Create notification | Yes |
+| PUT | `/api/notifications/{id}/read` | Mark as read | Yes |
+| DELETE | `/api/notifications/{id}` | Delete notification (soft) | Yes |
+
+**Features:**
+- User-scoped notifications
+- Soft delete with IsActive flag
+- Read/unread status tracking
 
 ---
 
@@ -168,10 +266,8 @@ SpendSmart.{Service}.API/
 
 ## Coming Soon
 
-- Income Service (5003) - Track income sources
-- Budget Service (5005) - Budget planning & alerts
-- Report Service (5006) - Financial reports & analytics
 - API Gateway (5000) - Single entry point for all services
+- Angular frontend (4200) - UI for all services
 
 ---
 
