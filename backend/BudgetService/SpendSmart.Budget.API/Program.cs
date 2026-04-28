@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SpendSmart.Budget.API.Data;
+using SpendSmart.Budget.API.Integration;
+using SpendSmart.Budget.API.Integration.Interfaces;
 using SpendSmart.Budget.API.Repositories;
 using SpendSmart.Budget.API.Repositories.Interfaces;
 using SpendSmart.Budget.API.Services;
@@ -18,6 +20,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+
+var expenseBaseUrl = builder.Configuration["ExpenseService:BaseUrl"] ?? "http://localhost:5002";
+builder.Services.AddHttpClient<IExpenseIntegrationService, ExpenseIntegrationService>(client =>
+{
+    client.BaseAddress = new Uri(expenseBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];

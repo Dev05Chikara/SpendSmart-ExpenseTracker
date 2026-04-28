@@ -30,7 +30,8 @@ public class BudgetsController : ControllerBase
         try
         {
             var userId = GetUserId();
-            var budgets = await _service.GetAllBudgetsAsync(userId);
+            var authToken = GetAuthToken();
+            var budgets = await _service.GetAllBudgetsAsync(userId, authToken);
             return Ok(new ApiResponse<List<BudgetResponse>>(true, "Budgets retrieved successfully.", budgets));
         }
         catch (UnauthorizedAccessException)
@@ -50,7 +51,8 @@ public class BudgetsController : ControllerBase
     {
         try
         {
-            var budget = await _service.GetBudgetByIdAsync(id);
+            var authToken = GetAuthToken();
+            var budget = await _service.GetBudgetByIdAsync(id, authToken);
             return Ok(new ApiResponse<BudgetResponse>(true, "Budget retrieved successfully.", budget));
         }
         catch (InvalidOperationException ex)
@@ -71,7 +73,8 @@ public class BudgetsController : ControllerBase
         try
         {
             var userId = GetUserId();
-            var budget = await _service.CreateBudgetAsync(userId, request);
+            var authToken = GetAuthToken();
+            var budget = await _service.CreateBudgetAsync(userId, request, authToken);
             return Created($"/api/budgets/{budget.BudgetId}", new ApiResponse<BudgetResponse>(true, "Budget created successfully.", budget));
         }
         catch (UnauthorizedAccessException)
@@ -96,7 +99,8 @@ public class BudgetsController : ControllerBase
         try
         {
             var userId = GetUserId();
-            var budget = await _service.UpdateBudgetAsync(id, userId, request);
+            var authToken = GetAuthToken();
+            var budget = await _service.UpdateBudgetAsync(id, userId, request, authToken);
             return Ok(new ApiResponse<BudgetResponse>(true, "Budget updated successfully.", budget));
         }
         catch (UnauthorizedAccessException)
@@ -143,5 +147,16 @@ public class BudgetsController : ControllerBase
         }
 
         return userId;
+    }
+
+    private string GetAuthToken()
+    {
+        var authorizationHeader = Request.Headers.Authorization.ToString();
+        if (string.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UnauthorizedAccessException("Invalid token");
+        }
+
+        return authorizationHeader[7..].Trim();
     }
 }

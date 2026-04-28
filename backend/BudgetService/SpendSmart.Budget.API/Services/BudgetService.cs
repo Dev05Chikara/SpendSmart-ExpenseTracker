@@ -1,27 +1,36 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using SpendSmart.Budget.API.DTOs;
+using SpendSmart.Budget.API.Integration;
 using SpendSmart.Budget.API.Repositories.Interfaces;
 using SpendSmart.Budget.API.Services.Interfaces;
+using SpendSmart.Budget.API.Integration.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace SpendSmart.Budget.API.Services;
 
 public class BudgetService : IBudgetService
 {
     private readonly IBudgetRepository _repository;
+    private readonly IExpenseIntegrationService _expenseIntegrationService;
+    private readonly ILogger<BudgetService> _logger;
 
-    public BudgetService(IBudgetRepository repository)
+    public BudgetService(IBudgetRepository repository, IExpenseIntegrationService expenseIntegrationService, ILogger<BudgetService> logger)
     {
         _repository = repository;
+        _expenseIntegrationService = expenseIntegrationService;
+        _logger = logger;
     }
 
-    public async Task<List<BudgetResponse>> GetAllBudgetsAsync(int userId)
+    public async Task<List<BudgetResponse>> GetAllBudgetsAsync(int userId, string authToken)
     {
-        return await _repository.GetAllBudgetsAsync(userId);
+        var budgets = await _repository.GetAllBudgetsAsync(userId);
+        return await EnrichBudgetsAsync(budgets, authToken);
     }
 
-    public async Task<BudgetResponse> GetBudgetByIdAsync(int budgetId)
+    public async Task<BudgetResponse> GetBudgetByIdAsync(int budgetId, string authToken)
     {
         var budget = await _repository.GetBudgetByIdAsync(budgetId);
 
@@ -30,10 +39,10 @@ public class BudgetService : IBudgetService
             throw new InvalidOperationException("Budget not found.");
         }
 
-        return budget;
+        return await EnrichBudgetAsync(budget, authToken);
     }
 
-    public async Task<BudgetResponse> CreateBudgetAsync(int userId, BudgetRequest request)
+    public async Task<BudgetResponse> CreateBudgetAsync(int userId, BudgetRequest request, string authToken)
     {
         if (request.LimitAmount <= 0)
         {
@@ -45,10 +54,11 @@ public class BudgetService : IBudgetService
             throw new InvalidOperationException("End date cannot be before start date.");
         }
 
-        return await _repository.CreateBudgetAsync(userId, request);
+        var budget = await _repository.CreateBudgetAsync(userId, request);
+        return await EnrichBudgetAsync(budget, authToken);
     }
 
-    public async Task<BudgetResponse> UpdateBudgetAsync(int budgetId, int userId, BudgetRequest request)
+    public async Task<BudgetResponse> UpdateBudgetAsync(int budgetId, int userId, BudgetRequest request, string authToken)
     {
         if (request.LimitAmount <= 0)
         {
@@ -60,11 +70,60 @@ public class BudgetService : IBudgetService
             throw new InvalidOperationException("End date cannot be before start date.");
         }
 
-        return await _repository.UpdateBudgetAsync(budgetId, userId, request);
+        var budget = await _repository.UpdateBudgetAsync(budgetId, userId, request);
+        return await EnrichBudgetAsync(budget, authToken);
     }
 
     public async Task DeleteBudgetAsync(int budgetId)
     {
         await _repository.DeleteBudgetAsync(budgetId);
+    }
+
+    private async Task<List<BudgetResponse>> EnrichBudgetsAsync(List<BudgetResponse> budgets, string authToken)
+    {
+        try
+        {
+            var expenses = await _expenseIntegrationService.GetUserExpensesAsync(authToken);
+
+            foreach (var budget in budgets)
+            {
+                ApplySpentData(budget, expenses);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Expense integration failed while loading budgets. Returning stored budget values.");
+        }
+
+        return budgets;
+    }
+
+    private async Task<BudgetResponse> EnrichBudgetAsync(BudgetResponse budget, string authToken)
+    {
+        try
+        {
+            var expenses = await _expenseIntegrationService.GetUserExpensesAsync(authToken);
+            ApplySpentData(budget, expenses);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Expense integration failed while loading budget {BudgetId}. Returning stored budget values.", budget.BudgetId);
+        }
+
+        return budget;
+    }
+
+    private static void ApplySpentData(BudgetResponse budget, IEnumerable<ExpenseDto> expenses)
+    {
+        var spentAmount = expenses
+            .Where(expense => expense.IsActive
+                && expense.CategoryId == budget.CategoryId
+                && expense.Date.Date >= budget.StartDate.Date
+                && expense.Date.Date <= budget.EndDate.Date)
+            .Sum(expense => expense.Amount);
+
+        budget.SpentAmount = spentAmount;
+        budget.RemainingAmount = budget.LimitAmount - spentAmount;
+        budget.UsagePercentage = budget.LimitAmount <= 0 ? 0 : (spentAmount / budget.LimitAmount) * 100;
     }
 }
