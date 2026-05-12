@@ -1,0 +1,63 @@
+name: Build and deploy to Azure
+
+on:
+  push:
+    branches: [ dev, main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to ACR
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push Auth image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/AuthService/SpendSmart.Auth.API
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/spendsmart-auth:${{ github.sha }}
+
+      - name: Build and push Gateway image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend/GatewayService/SpendSmart.Gateway.API
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/spendsmart-gateway:${{ github.sha }}
+
+      # Repeat build steps for other services as needed (expense, income, category, budget, report, notification)
+
+  deploy-to-azure:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Auth to WebApp (Container)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_AUTH }}
+          images: '${{ secrets.ACR_LOGIN_SERVER }}/spendsmart-auth:${{ github.sha }}'
+
+      - name: Deploy Gateway to WebApp (Container)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_GATEWAY }}
+          images: '${{ secrets.ACR_LOGIN_SERVER }}/spendsmart-gateway:${{ github.sha }}'
+
+      # Add similar deploy steps for remaining services, mapping each image to its WebApp name.

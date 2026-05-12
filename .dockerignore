@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/publish/
+**/*.user
+**/*.suo
+**/*.vs
+node_modules
+dist
+bin
+obj
+.vscode
+.env
+.DS_Store
