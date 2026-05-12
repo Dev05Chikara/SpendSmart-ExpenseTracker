@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="SpendSmart logo">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6C63FF"/>
+      <stop offset="100%" stop-color="#11D9C5"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0F0F1A"/>
+  <circle cx="64" cy="64" r="38" fill="url(#g)" opacity="0.18"/>
+  <path d="M64 26c-20.9 0-38 17.1-38 38s17.1 38 38 38 38-17.1 38-38-17.1-38-38-38zm0 12c4.2 0 8 1.3 11.2 3.4l-5.7 9.7c-1.7-1-3.6-1.6-5.5-1.6-3.8 0-6.8 2.2-6.8 5 0 2.7 2.8 4.2 8.1 5.7 10.7 3 16.6 6.9 16.6 16.4 0 9.2-6.2 15.4-15.1 17.3V102H60V89.9c-5.2-.7-10.1-2.6-14-5.7l6.3-9.2c3.3 2.5 7.6 4.3 12.5 4.3 4.3 0 7.2-1.8 7.2-5.1 0-3-2.5-4.3-8.5-5.9-10-2.7-16.2-6.6-16.2-15.9 0-8.4 5.8-14.5 14.7-16.4V38h8v5.1z" fill="#ffffff"/>
+</svg>
