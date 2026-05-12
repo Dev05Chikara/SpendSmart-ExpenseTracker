@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SpendSmart.Budget.API.Data;
 using SpendSmart.Budget.API.DTOs;
+using SpendSmart.Budget.API.Models;
 using SpendSmart.Budget.API.Repositories.Interfaces;
 
 namespace SpendSmart.Budget.API.Repositories;
@@ -92,6 +93,55 @@ public class BudgetRepository : IBudgetRepository
         budget.UpdatedAt = DateTime.UtcNow;
 
         _context.Budgets.Update(budget);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<bool> HasPendingAlertAsync(int budgetId, decimal thresholdPercentage)
+    {
+        return await _context.BudgetAlertOutbox.AnyAsync(x => x.BudgetId == budgetId && x.ThresholdPercentage == thresholdPercentage);
+    }
+
+    public async Task<BudgetAlertOutbox> EnqueueAlertAsync(BudgetAlertOutbox alert)
+    {
+        _context.BudgetAlertOutbox.Add(alert);
+        await _context.SaveChangesAsync();
+        return alert;
+    }
+
+    public async Task<List<BudgetAlertOutbox>> GetPendingAlertsAsync(int batchSize)
+    {
+        return await _context.BudgetAlertOutbox
+            .Where(x => !x.IsDelivered)
+            .OrderBy(x => x.CreatedAt)
+            .Take(batchSize)
+            .ToListAsync();
+    }
+
+    public async Task MarkAlertDeliveredAsync(int id)
+    {
+        var alert = await _context.BudgetAlertOutbox.FirstOrDefaultAsync(x => x.Id == id);
+        if (alert == null)
+        {
+            return;
+        }
+
+        alert.IsDelivered = true;
+        alert.DeliveredAt = DateTime.UtcNow;
+        alert.LastError = null;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task MarkAlertFailedAsync(int id, string errorMessage)
+    {
+        var alert = await _context.BudgetAlertOutbox.FirstOrDefaultAsync(x => x.Id == id);
+        if (alert == null)
+        {
+            return;
+        }
+
+        alert.AttemptCount += 1;
+        alert.LastAttemptAt = DateTime.UtcNow;
+        alert.LastError = errorMessage;
         await _context.SaveChangesAsync();
     }
 

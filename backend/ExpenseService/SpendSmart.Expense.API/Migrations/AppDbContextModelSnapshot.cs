@@ -58,6 +58,9 @@ namespace SpendSmart.Expense.API.Migrations
                     b.Property<string>("ReceiptUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RecurrenceType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 

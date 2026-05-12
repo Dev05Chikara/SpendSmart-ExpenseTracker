@@ -213,7 +213,10 @@ public class UserService : IUserService
         {
             new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim("FullName", user.FullName)
+            new Claim("FullName", user.FullName),
+            new Claim(ClaimTypes.Role, user.Role ?? "User"),
+            // Add a simple 'role' claim to make it easier for JS clients to read
+            new Claim("role", user.Role ?? "User")
         };
 
         var token = new JwtSecurityToken(
@@ -242,8 +245,53 @@ public class UserService : IUserService
             Currency = user.Currency,
             IsActive = user.IsActive,
             CreatedAt = user.CreatedAt,
-            LastLoginAt = user.LastLoginAt
+            LastLoginAt = user.LastLoginAt,
+            Role = user.Role ?? "User"
         };
+    }
+
+    /// <summary>
+    /// Gets all users (admin).
+    /// </summary>
+    public async Task<List<UserResponse>> GetAllUsersAsync()
+    {
+        var users = await _userRepository.GetAllUsersAsync();
+        return users.Select(MapToUserResponse).ToList();
+    }
+
+    /// <summary>
+    /// Suspends a user account.
+    /// </summary>
+    public async Task<string> SuspendUserAsync(int userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null) throw new InvalidOperationException("User not found.");
+        user.IsActive = false;
+        await _userRepository.UpdateUserAsync(user);
+        return "User suspended.";
+    }
+
+    /// <summary>
+    /// Activates a user account.
+    /// </summary>
+    public async Task<string> ActivateUserAsync(int userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null) throw new InvalidOperationException("User not found.");
+        user.IsActive = true;
+        await _userRepository.UpdateUserAsync(user);
+        return "User activated.";
+    }
+
+    /// <summary>
+    /// Deletes a user account.
+    /// </summary>
+    public async Task<string> DeleteUserAsync(int userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null) throw new InvalidOperationException("User not found.");
+        await _userRepository.DeleteUserAsync(userId);
+        return "User deleted.";
     }
 
     /// <summary>

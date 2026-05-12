@@ -73,4 +73,23 @@ public class UserRepository : IUserRepository
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId);
     }
+
+    /// <summary>
+    /// Gets all users in the system.
+    /// </summary>
+    public async Task<List<User>> GetAllUsersAsync()
+    {
+        return await _context.Users.OrderBy(u => u.FullName).ToListAsync();
+    }
+
+    /// <summary>
+    /// Deletes a user by id.
+    /// </summary>
+    public async Task DeleteUserAsync(int userId)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+        if (user == null) return;
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+    }
 }

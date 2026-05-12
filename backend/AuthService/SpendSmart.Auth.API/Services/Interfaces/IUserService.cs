@@ -65,4 +65,24 @@ public interface IUserService
     /// <param name="expiresAt">The expiration time of the token (UTC).</param>
     /// <returns>A success message.</returns>
     Task<string> LogoutAsync(int userId, string token, DateTime expiresAt);
+
+    /// <summary>
+    /// Gets all users (admin only).
+    /// </summary>
+    Task<List<UserResponse>> GetAllUsersAsync();
+
+    /// <summary>
+    /// Suspend a user account (admin only).
+    /// </summary>
+    Task<string> SuspendUserAsync(int userId);
+
+    /// <summary>
+    /// Activate a user account (admin only).
+    /// </summary>
+    Task<string> ActivateUserAsync(int userId);
+
+    /// <summary>
+    /// Delete a user account (admin only).
+    /// </summary>
+    Task<string> DeleteUserAsync(int userId);
 }

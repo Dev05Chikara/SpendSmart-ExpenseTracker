@@ -11,5 +11,6 @@ public class ExpenseResponse
     public string PaymentMode { get; set; } = default!;
     public string? ReceiptUrl { get; set; }
     public bool IsRecurring { get; set; }
+    public string? RecurrenceType { get; set; }
     public bool IsActive { get; set; }
 }

@@ -55,6 +55,7 @@ public class ExpenseService : IExpenseService
             Description = request.Description,
             PaymentMode = request.PaymentMode,
             IsRecurring = request.IsRecurring,
+            RecurrenceType = request.RecurrenceType,
             IsActive = true
         };
 
@@ -77,6 +78,7 @@ public class ExpenseService : IExpenseService
         expense.Description = request.Description;
         expense.PaymentMode = request.PaymentMode;
         expense.IsRecurring = request.IsRecurring;
+        expense.RecurrenceType = request.RecurrenceType;
 
         await _repository.UpdateExpenseAsync(expense);
         return MapToResponse(expense);
@@ -100,6 +102,7 @@ public class ExpenseService : IExpenseService
             PaymentMode = expense.PaymentMode,
             ReceiptUrl = expense.ReceiptUrl,
             IsRecurring = expense.IsRecurring,
+            RecurrenceType = expense.RecurrenceType,
             IsActive = expense.IsActive
         };
     }

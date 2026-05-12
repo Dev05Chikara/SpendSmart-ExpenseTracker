@@ -28,6 +28,15 @@ public class NotificationRepository : INotificationRepository
             .FirstOrDefaultAsync(n => n.NotificationId == id && n.UserId == userId && n.IsActive);
     }
 
+    public async Task<bool> BudgetAlertExistsAsync(int userId, int? budgetId, decimal? thresholdPercentage)
+    {
+        return await _context.Notifications.AnyAsync(n =>
+            n.UserId == userId &&
+            n.IsActive &&
+            n.BudgetId == budgetId &&
+            n.ThresholdPercentage == thresholdPercentage);
+    }
+
     public async Task<AppNotification> CreateAsync(AppNotification notification)
     {
         _context.Notifications.Add(notification);

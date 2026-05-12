@@ -41,4 +41,14 @@ public interface IUserRepository
     /// <param name="googleId">The Google ID to search for.</param>
     /// <returns>The user if found; otherwise null.</returns>
     Task<User?> GetUserByGoogleIdAsync(string googleId);
+
+    /// <summary>
+    /// Gets all users in the system.
+    /// </summary>
+    Task<List<User>> GetAllUsersAsync();
+
+    /// <summary>
+    /// Deletes a user by id.
+    /// </summary>
+    Task DeleteUserAsync(int userId);
 }

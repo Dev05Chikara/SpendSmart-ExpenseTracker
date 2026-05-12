@@ -6,6 +6,7 @@ using SpendSmart.Budget.API.Integration;
 using SpendSmart.Budget.API.Integration.Interfaces;
 using SpendSmart.Budget.API.Repositories;
 using SpendSmart.Budget.API.Repositories.Interfaces;
+using SpendSmart.Budget.API.HostedServices;
 using SpendSmart.Budget.API.Services;
 using SpendSmart.Budget.API.Services.Interfaces;
 using System;
@@ -20,6 +21,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
 builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHostedService<BudgetAlertDispatcherService>();
 
 var expenseBaseUrl = builder.Configuration["ExpenseService:BaseUrl"] ?? "http://localhost:5002";
 builder.Services.AddHttpClient<IExpenseIntegrationService, ExpenseIntegrationService>(client =>
@@ -55,18 +58,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = jwtAudience,
         ValidateLifetime = true,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
         ClockSkew = TimeSpan.Zero
     };
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
 });
 
 var app = builder.Build();
@@ -75,10 +69,40 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
+
+    if (app.Environment.IsDevelopment() && !dbContext.Budgets.Any())
+    {
+        dbContext.Budgets.AddRange(
+            new SpendSmart.Budget.API.Models.Budget
+            {
+                UserId = 1,
+                CategoryId = 1,
+                LimitAmount = 5000,
+                SpentAmount = 1800,
+                Period = "Monthly",
+                StartDate = DateTime.UtcNow.Date.AddDays(-10),
+                EndDate = DateTime.UtcNow.Date.AddDays(20),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SpendSmart.Budget.API.Models.Budget
+            {
+                UserId = 1,
+                CategoryId = 2,
+                LimitAmount = 10000,
+                SpentAmount = 8800,
+                Period = "Monthly",
+                StartDate = DateTime.UtcNow.Date.AddDays(-10),
+                EndDate = DateTime.UtcNow.Date.AddDays(20),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        dbContext.SaveChanges();
+    }
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 

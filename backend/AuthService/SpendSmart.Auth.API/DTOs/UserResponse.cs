@@ -31,6 +31,11 @@ public class UserResponse
     public bool IsActive { get; set; }
 
     /// <summary>
+    /// Gets or sets the user's role (e.g., User, Admin).
+    /// </summary>
+    public string Role { get; set; } = "User";
+
+    /// <summary>
     /// Gets or sets the account creation timestamp.
     /// </summary>
     public DateTime CreatedAt { get; set; }

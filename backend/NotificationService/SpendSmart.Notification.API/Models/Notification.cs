@@ -21,6 +21,10 @@ public class AppNotification
     [MaxLength(50)]
     public string Type { get; set; } = "General";
 
+    public int? BudgetId { get; set; }
+
+    public decimal? ThresholdPercentage { get; set; }
+
     public bool IsRead { get; set; } = false;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

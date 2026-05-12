@@ -8,6 +8,7 @@ using SpendSmart.Budget.API.Repositories.Interfaces;
 using SpendSmart.Budget.API.Services.Interfaces;
 using SpendSmart.Budget.API.Integration.Interfaces;
 using Microsoft.Extensions.Logging;
+using SpendSmart.Budget.API.Models;
 
 namespace SpendSmart.Budget.API.Services;
 
@@ -88,6 +89,7 @@ public class BudgetService : IBudgetService
             foreach (var budget in budgets)
             {
                 ApplySpentData(budget, expenses);
+                await QueueThresholdAlertsAsync(budget);
             }
         }
         catch (Exception ex)
@@ -104,6 +106,7 @@ public class BudgetService : IBudgetService
         {
             var expenses = await _expenseIntegrationService.GetUserExpensesAsync(authToken);
             ApplySpentData(budget, expenses);
+            await QueueThresholdAlertsAsync(budget);
         }
         catch (Exception ex)
         {
@@ -125,5 +128,44 @@ public class BudgetService : IBudgetService
         budget.SpentAmount = spentAmount;
         budget.RemainingAmount = budget.LimitAmount - spentAmount;
         budget.UsagePercentage = budget.LimitAmount <= 0 ? 0 : (spentAmount / budget.LimitAmount) * 100;
+    }
+
+    private async Task QueueThresholdAlertsAsync(BudgetResponse budget)
+    {
+        var thresholds = new[] { 80m, 100m };
+
+        foreach (var threshold in thresholds)
+        {
+            if (budget.UsagePercentage < threshold)
+            {
+                continue;
+            }
+
+            var alreadyQueued = await _repository.HasPendingAlertAsync(budget.BudgetId, threshold);
+            if (alreadyQueued)
+            {
+                continue;
+            }
+
+            var title = threshold >= 100m ? "Budget Breached" : "Budget Alert";
+            var message = threshold >= 100m
+                ? $"Your budget for category {budget.CategoryId} has reached {budget.UsagePercentage:0.#}% of the limit."
+                : $"Your budget for category {budget.CategoryId} has reached {budget.UsagePercentage:0.#}% of the limit.";
+
+            await _repository.EnqueueAlertAsync(new BudgetAlertOutbox
+            {
+                BudgetId = budget.BudgetId,
+                UserId = budget.UserId,
+                CategoryId = budget.CategoryId,
+                ThresholdPercentage = threshold,
+                CurrentUsagePercentage = budget.UsagePercentage,
+                LimitAmount = budget.LimitAmount,
+                SpentAmount = budget.SpentAmount,
+                Title = title,
+                Message = message,
+                Type = threshold >= 100m ? "BudgetBreached" : "BudgetAlert",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
     }
 }

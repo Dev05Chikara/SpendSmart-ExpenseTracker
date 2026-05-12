@@ -20,5 +20,9 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<AppNotification>()
             .HasIndex(n => new { n.UserId, n.CreatedAt });
+
+        modelBuilder.Entity<AppNotification>()
+            .HasIndex(n => new { n.UserId, n.BudgetId, n.ThresholdPercentage })
+            .HasDatabaseName("IX_Notifications_UserId_BudgetId_ThresholdPercentage");
     }
 }

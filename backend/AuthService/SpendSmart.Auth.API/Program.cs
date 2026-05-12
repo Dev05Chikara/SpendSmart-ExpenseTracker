@@ -26,6 +26,18 @@ builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 // Add controllers
 builder.Services.AddControllers();
 
+// Add CORS for Angular frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -53,7 +65,8 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtIssuer,
         ValidateAudience = true,
         ValidAudience = jwtAudience,
-        ValidateLifetime = true,
+            ValidateLifetime = true,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role,
         ClockSkew = TimeSpan.Zero
     };
 
@@ -89,11 +102,59 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Enable CORS before authentication
+app.UseCors("AngularDev");
+
 // Add authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Map controllers
 app.MapControllers();
+
+// Apply migrations and seed admin user (development-friendly)
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var services = scope.ServiceProvider;
+        var db = services.GetRequiredService<AppDbContext>();
+        // Apply any pending migrations
+        db.Database.Migrate();
+
+        // Seed admin user only in development if none exists
+        if (app.Environment.IsDevelopment())
+        {
+            var hasAdmin = db.Users.Any(u => u.Role == "Admin");
+            if (!hasAdmin)
+            {
+                var seedEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@spendsmart.local";
+                var seedPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin@123";
+                var seedFullName = builder.Configuration["SeedAdmin:FullName"] ?? "Administrator";
+
+                var admin = new SpendSmart.Auth.API.Models.User
+                {
+                    FullName = seedFullName,
+                    Email = seedEmail,
+                    Currency = "INR",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    Role = "Admin"
+                };
+
+                var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<SpendSmart.Auth.API.Models.User>();
+                admin.PasswordHash = hasher.HashPassword(admin, seedPassword);
+
+                db.Users.Add(admin);
+                db.SaveChanges();
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating or seeding the database.");
+    }
+}
 
 app.Run();

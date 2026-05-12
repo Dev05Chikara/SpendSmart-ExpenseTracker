@@ -79,6 +79,12 @@ public class AppDbContext : DbContext
 
             entity.HasIndex(e => e.GoogleId)
                 .IsUnique();
+
+            // Role column for role-based access control
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("User");
         });
 
         // Configure TokenBlacklist entity

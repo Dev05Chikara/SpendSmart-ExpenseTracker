@@ -26,6 +26,7 @@ namespace SpendSmart.Report.API.Controllers
             try
             {
                 var userId = GetUserId();
+                var bearerToken = GetBearerToken();
                 
                 if (month < 1 || month > 12)
                     return BadRequest(new ApiResponse<MonthlySummaryResponse> 
@@ -34,7 +35,7 @@ namespace SpendSmart.Report.API.Controllers
                         Message = "Invalid month. Month must be between 1 and 12." 
                     });
 
-                var summary = await _reportService.GetMonthlySummaryAsync(userId, year, month);
+                var summary = await _reportService.GetMonthlySummaryAsync(userId, year, month, bearerToken);
                 return Ok(new ApiResponse<MonthlySummaryResponse>
                 {
                     Success = true,
@@ -58,6 +59,7 @@ namespace SpendSmart.Report.API.Controllers
             try
             {
                 var userId = GetUserId();
+                var bearerToken = GetBearerToken();
 
                 if (year < 1900 || year > DateTime.UtcNow.Year + 10)
                     return BadRequest(new ApiResponse<YearlySummaryResponse>
@@ -66,7 +68,7 @@ namespace SpendSmart.Report.API.Controllers
                         Message = "Invalid year."
                     });
 
-                var summary = await _reportService.GetYearlySummaryAsync(userId, year);
+                var summary = await _reportService.GetYearlySummaryAsync(userId, year, bearerToken);
                 return Ok(new ApiResponse<YearlySummaryResponse>
                 {
                     Success = true,
@@ -90,6 +92,7 @@ namespace SpendSmart.Report.API.Controllers
             try
             {
                 var userId = GetUserId();
+                var bearerToken = GetBearerToken();
 
                 if (month < 1 || month > 12)
                     return BadRequest(new ApiResponse<CategoryBreakdownResponse>
@@ -98,7 +101,7 @@ namespace SpendSmart.Report.API.Controllers
                         Message = "Invalid month. Month must be between 1 and 12."
                     });
 
-                var breakdown = await _reportService.GetCategoryBreakdownAsync(userId, year, month);
+                var breakdown = await _reportService.GetCategoryBreakdownAsync(userId, year, month, bearerToken);
                 return Ok(new ApiResponse<CategoryBreakdownResponse>
                 {
                     Success = true,
@@ -123,6 +126,17 @@ namespace SpendSmart.Report.API.Controllers
                 return userId;
 
             throw new UnauthorizedAccessException("User ID not found in token.");
+        }
+
+        private string GetBearerToken()
+        {
+            var authHeader = Request.Headers.Authorization.ToString();
+            if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                return authHeader[7..].Trim();
+            }
+
+            throw new UnauthorizedAccessException("Bearer token not found.");
         }
     }
 }

@@ -33,6 +33,9 @@ namespace SpendSmart.Notification.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("BudgetId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -57,12 +60,19 @@ namespace SpendSmart.Notification.API.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal?>("ThresholdPercentage")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("NotificationId");
 
                     b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "BudgetId", "ThresholdPercentage")
+                        .HasDatabaseName("IX_Notifications_UserId_BudgetId_ThresholdPercentage");
 
                     b.HasIndex("UserId", "IsRead", "IsActive");
 

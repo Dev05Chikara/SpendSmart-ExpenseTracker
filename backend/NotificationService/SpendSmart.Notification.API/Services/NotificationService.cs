@@ -38,6 +38,40 @@ public class NotificationService : INotificationService
         return MapToResponse(created);
     }
 
+    public async Task<NotificationResponse> CreateBudgetAlertNotificationAsync(BudgetAlertNotificationRequest request)
+    {
+        var alreadyExists = await _repository.BudgetAlertExistsAsync(request.UserId, request.BudgetId, request.ThresholdPercentage);
+        if (alreadyExists)
+        {
+            var existing = await _repository.GetAllByUserIdAsync(request.UserId);
+            var notification = existing.FirstOrDefault(n =>
+                n.BudgetId == request.BudgetId &&
+                n.ThresholdPercentage == request.ThresholdPercentage &&
+                n.IsActive);
+
+            if (notification != null)
+            {
+                return MapToResponse(notification);
+            }
+        }
+
+        var notificationEntity = new AppNotification
+        {
+            UserId = request.UserId,
+            BudgetId = request.BudgetId,
+            ThresholdPercentage = request.ThresholdPercentage,
+            Title = request.Title,
+            Message = request.Message,
+            Type = request.Type,
+            IsRead = false,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var created = await _repository.CreateAsync(notificationEntity);
+        return MapToResponse(created);
+    }
+
     public async Task<NotificationResponse> MarkAsReadAsync(int id, int userId)
     {
         var updated = await _repository.MarkAsReadAsync(id, userId);
@@ -67,6 +101,8 @@ public class NotificationService : INotificationService
             Title = notification.Title,
             Message = notification.Message,
             Type = notification.Type,
+            BudgetId = notification.BudgetId,
+            ThresholdPercentage = notification.ThresholdPercentage,
             IsRead = notification.IsRead,
             CreatedAt = notification.CreatedAt
         };

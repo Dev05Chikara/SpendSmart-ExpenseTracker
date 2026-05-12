@@ -34,69 +34,74 @@ public class GoogleAuthService : IGoogleAuthService
     /// </summary>
     public async Task<LoginResponse> AuthenticateWithGoogleAsync(string idToken)
     {
+        // Step 1: Validate Google ID token with the registered Client ID
+        GoogleJsonWebSignature.Payload payload;
         try
         {
-            // Validate Google ID token
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            var clientId = _configuration["Google:ClientId"]
+                ?? throw new InvalidOperationException("Google:ClientId is not configured in appsettings.");
+
+            var settings = new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { clientId }
+            };
+
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
 
             if (payload == null)
-            {
-                throw new InvalidOperationException("Failed to parse Google token payload");
-            }
+                throw new InvalidOperationException("Failed to parse Google token payload.");
+        }
+        catch (InvalidJwtException ex)
+        {
+            _logger.LogWarning("Google token validation failed: {Message}", ex.Message);
+            throw new InvalidOperationException("Invalid Google ID token: " + ex.Message);
+        }
 
-            // Extract user info from token
+        // Step 2: Extract user claims
+        try
+        {
             var googleId = payload.Subject;
             if (string.IsNullOrEmpty(googleId))
-            {
-                throw new InvalidOperationException("Google ID (sub) not found in token");
-            }
+                throw new InvalidOperationException("Google ID (sub) not found in token.");
 
             var email = payload.Email;
             if (string.IsNullOrEmpty(email))
-            {
-                throw new InvalidOperationException("Email not found in Google token. Ensure 'email' scope is included.");
-            }
+                throw new InvalidOperationException("Email not found in Google token. Ensure the 'email' scope is included.");
 
-            var fullName = payload.Name ?? email.Split('@')[0]; // Fallback to username part of email
+            var fullName = payload.Name ?? email.Split('@')[0];
 
-            // Check if user exists by GoogleId
+            // Step 3: Find or create user
             var user = await _userRepository.GetUserByGoogleIdAsync(googleId);
 
             if (user == null)
             {
-                // Check if user exists by email (in case they sign up with email first)
                 user = await _userRepository.GetUserByEmailAsync(email);
 
                 if (user == null)
                 {
-                    // Create new user
                     user = new User
                     {
                         FullName = fullName,
                         Email = email,
                         GoogleId = googleId,
-                        PasswordHash = string.Empty, // No password for OAuth users
+                        PasswordHash = string.Empty,
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     };
-
                     await _userRepository.CreateUserAsync(user);
-                    _logger.LogInformation($"New user created via Google OAuth: {email}");
+                    _logger.LogInformation("New user created via Google OAuth: {Email}", email);
                 }
                 else
                 {
-                    // Link GoogleId to existing email account
                     user.GoogleId = googleId;
                     await _userRepository.UpdateUserAsync(user);
-                    _logger.LogInformation($"GoogleId linked to existing user: {email}");
+                    _logger.LogInformation("GoogleId linked to existing user: {Email}", email);
                 }
             }
 
-            // Update last login
             user.LastLoginAt = DateTime.UtcNow;
             await _userRepository.UpdateUserAsync(user);
 
-            // Generate JWT token
             var jwtToken = GenerateJwtToken(user);
 
             return new LoginResponse
@@ -111,15 +116,14 @@ public class GoogleAuthService : IGoogleAuthService
                 }
             };
         }
-        catch (InvalidOperationException ex)
+        catch (InvalidOperationException)
         {
-            _logger.LogWarning($"Invalid Google ID token: {ex.Message}");
-            throw new InvalidOperationException("Invalid Google ID token");
+            throw; // rethrow as-is — message is already descriptive
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Google authentication error: {ex.Message}");
-            throw new InvalidOperationException("Google authentication failed");
+            _logger.LogError("Google authentication error: {Message}", ex.Message);
+            throw new InvalidOperationException("Google authentication failed: " + ex.Message);
         }
     }
 
@@ -130,8 +134,8 @@ public class GoogleAuthService : IGoogleAuthService
     {
         var key = new SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes(
-                _configuration["Jwt:SecretKey"] 
-                ?? throw new InvalidOperationException("Jwt:SecretKey not configured")));
+                _configuration["Jwt:Key"] 
+                ?? throw new InvalidOperationException("Jwt:Key not configured")));
 
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -147,7 +151,7 @@ public class GoogleAuthService : IGoogleAuthService
             audience: _configuration["Jwt:Audience"],
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_configuration["Jwt:TokenExpiryMinutes"] ?? "1440")),
+                int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "1440")),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

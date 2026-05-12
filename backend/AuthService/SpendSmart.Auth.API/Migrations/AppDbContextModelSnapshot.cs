@@ -102,6 +102,13 @@ namespace SpendSmart.Auth.API.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("User");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")

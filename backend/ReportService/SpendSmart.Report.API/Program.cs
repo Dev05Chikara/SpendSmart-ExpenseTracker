@@ -47,6 +47,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IReportService, ReportService>();
 
 // Add CORS
+// Add HttpClient for inter-service communication
+builder.Services.AddHttpClient();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

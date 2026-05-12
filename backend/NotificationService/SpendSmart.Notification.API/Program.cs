@@ -46,18 +46,9 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = jwtAudience,
         ValidateLifetime = true,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role,
         ClockSkew = TimeSpan.Zero
     };
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
 });
 
 var app = builder.Build();
@@ -66,10 +57,38 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     dbContext.Database.Migrate();
+
+    if (app.Environment.IsDevelopment() && !dbContext.Notifications.Any())
+    {
+        dbContext.Notifications.AddRange(
+            new SpendSmart.Notification.API.Models.AppNotification
+            {
+                UserId = 1,
+                Title = "Welcome to SpendSmart",
+                Message = "Your notification center is ready.",
+                Type = "General",
+                IsRead = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new SpendSmart.Notification.API.Models.AppNotification
+            {
+                UserId = 1,
+                Title = "Budget Alert Sample",
+                Message = "This is a seeded sample notification for development.",
+                Type = "BudgetAlert",
+                BudgetId = 1,
+                ThresholdPercentage = 80,
+                IsRead = false,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            });
+
+        dbContext.SaveChanges();
+    }
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 

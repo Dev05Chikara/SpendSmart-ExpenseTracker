@@ -49,4 +49,8 @@ public class User
     /// Gets or sets the Google ID for OAuth authentication (nullable).
     /// </summary>
     public string? GoogleId { get; set; }
+    /// <summary>
+    /// Gets or sets the user's role. Defaults to "User".
+    /// </summary>
+    public string Role { get; set; } = "User";
 }
