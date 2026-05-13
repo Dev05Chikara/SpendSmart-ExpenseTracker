@@ -1,0 +1,10 @@
+## Frontend build context .dockerignore
+## Only the source files and package.json are needed
+
+node_modules/
+dist/
+.angular/
+.vscode/
+.git/
+*.md
+karma.conf.js

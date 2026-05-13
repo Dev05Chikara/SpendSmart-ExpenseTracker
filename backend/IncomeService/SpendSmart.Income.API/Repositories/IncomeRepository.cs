@@ -32,6 +32,7 @@ public class IncomeRepository : IIncomeRepository
                 Description = i.Description,
                 Source = i.Source,
                 IsRecurring = i.IsRecurring,
+                RecurrenceType = i.RecurrenceType,
                 CreatedAt = i.CreatedAt,
                 UpdatedAt = i.UpdatedAt
             })
@@ -56,6 +57,7 @@ public class IncomeRepository : IIncomeRepository
             Description = income.Description,
             Source = income.Source,
             IsRecurring = income.IsRecurring,
+            RecurrenceType = income.RecurrenceType,
             CreatedAt = income.CreatedAt,
             UpdatedAt = income.UpdatedAt
         };
@@ -75,6 +77,7 @@ public class IncomeRepository : IIncomeRepository
                 Description = i.Description,
                 Source = i.Source,
                 IsRecurring = i.IsRecurring,
+                RecurrenceType = i.RecurrenceType,
                 CreatedAt = i.CreatedAt,
                 UpdatedAt = i.UpdatedAt
             })
@@ -91,6 +94,8 @@ public class IncomeRepository : IIncomeRepository
             Description = request.Description,
             Source = request.Source,
             IsRecurring = request.IsRecurring,
+            RecurrenceType = request.RecurrenceType,
+            NextDueDate = request.IsRecurring ? SpendSmart.Income.API.Services.IncomeService.CalculateNextDueDate(request.Date, request.RecurrenceType) : null,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -107,6 +112,7 @@ public class IncomeRepository : IIncomeRepository
             Description = income.Description,
             Source = income.Source,
             IsRecurring = income.IsRecurring,
+            RecurrenceType = income.RecurrenceType,
             CreatedAt = income.CreatedAt,
             UpdatedAt = income.UpdatedAt
         };
@@ -124,6 +130,8 @@ public class IncomeRepository : IIncomeRepository
         income.Description = request.Description;
         income.Source = request.Source;
         income.IsRecurring = request.IsRecurring;
+        income.RecurrenceType = request.RecurrenceType;
+        income.NextDueDate = request.IsRecurring ? SpendSmart.Income.API.Services.IncomeService.CalculateNextDueDate(request.Date, request.RecurrenceType) : null;
         income.UpdatedAt = DateTime.UtcNow;
 
         _context.Incomes.Update(income);
@@ -138,6 +146,7 @@ public class IncomeRepository : IIncomeRepository
             Description = income.Description,
             Source = income.Source,
             IsRecurring = income.IsRecurring,
+            RecurrenceType = income.RecurrenceType,
             CreatedAt = income.CreatedAt,
             UpdatedAt = income.UpdatedAt
         };

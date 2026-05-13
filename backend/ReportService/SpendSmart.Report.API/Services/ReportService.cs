@@ -12,10 +12,12 @@ namespace SpendSmart.Report.API.Services
     public class ReportService : IReportService
     {
         private readonly HttpClient _httpClient;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-        public ReportService(HttpClient httpClient)
+        public ReportService(HttpClient httpClient, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _configuration = configuration;
         }
 
         public async Task<MonthlySummaryResponse> GetMonthlySummaryAsync(int userId, int year, int month, string bearerToken)
@@ -208,19 +210,22 @@ namespace SpendSmart.Report.API.Services
 
         private async Task<List<ExpenseResponse>> FetchExpensesByDateAsync(DateTime startDate, DateTime endDate)
         {
-            var url = $"http://localhost:5002/api/expenses/by-date?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
+            var baseUrl = _configuration["ExpenseService:BaseUrl"] ?? "http://localhost:5002";
+            var url = $"{baseUrl.TrimEnd('/')}/api/expenses/by-date?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
             return await GetServiceDataAsync<ExpenseResponse>(url);
         }
 
         private async Task<List<IncomeResponse>> FetchIncomesByDateAsync(DateTime startDate, DateTime endDate)
         {
-            var url = $"http://localhost:5003/api/incomes/by-date?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
+            var baseUrl = _configuration["IncomeService:BaseUrl"] ?? "http://localhost:5003";
+            var url = $"{baseUrl.TrimEnd('/')}/api/incomes/by-date?startDate={startDate:yyyy-MM-dd}&endDate={endDate:yyyy-MM-dd}";
             return await GetServiceDataAsync<IncomeResponse>(url);
         }
 
         private async Task<List<CategoryResponse>> FetchCategoriesAsync()
         {
-            var url = "http://localhost:5004/api/categories";
+            var baseUrl = _configuration["CategoryService:BaseUrl"] ?? "http://localhost:5004";
+            var url = $"{baseUrl.TrimEnd('/')}/api/categories";
             return await GetServiceDataAsync<CategoryResponse>(url);
         }
 

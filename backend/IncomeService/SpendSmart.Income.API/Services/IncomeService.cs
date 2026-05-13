@@ -59,4 +59,18 @@ public class IncomeService : IIncomeService
     {
         await _repository.DeleteIncomeAsync(incomeId);
     }
+
+    public static DateTime? CalculateNextDueDate(DateTime date, string? recurrenceType)
+    {
+        if (string.IsNullOrEmpty(recurrenceType)) return null;
+
+        return recurrenceType.ToLower() switch
+        {
+            "daily" => date.AddDays(1),
+            "weekly" => date.AddDays(7),
+            "monthly" => date.AddMonths(1),
+            "yearly" => date.AddYears(1),
+            _ => null
+        };
+    }
 }

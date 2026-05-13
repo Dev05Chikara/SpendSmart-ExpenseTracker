@@ -1,0 +1,218 @@
+name: spendsmart
+
+# ─────────────────────────────────────────────────────────────
+# NETWORKS
+# ─────────────────────────────────────────────────────────────
+networks:
+  backend-net:
+    driver: bridge
+  frontend-net:
+    driver: bridge
+
+# ─────────────────────────────────────────────────────────────
+# VOLUMES
+# ─────────────────────────────────────────────────────────────
+volumes:
+  sqlserver-data:
+
+# ─────────────────────────────────────────────────────────────
+# SERVICES
+# ─────────────────────────────────────────────────────────────
+services:
+
+  # ── SQL Server ──────────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: spendsmart-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -No -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── Auth Service ─────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./backend/AuthService/SpendSmart.Auth.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-auth
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartAuthDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      Google__ClientId: "${GOOGLE_CLIENT_ID}"
+      SeedAdmin__Email: "${SEED_ADMIN_EMAIL}"
+      SeedAdmin__Password: "${SEED_ADMIN_PASSWORD}"
+      SeedAdmin__FullName: "${SEED_ADMIN_FULLNAME}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Category Service ─────────────────────────────────────────
+  category-service:
+    build:
+      context: ./backend/CategoryService/SpendSmart.Category.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-category
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartCategoryDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Expense Service ──────────────────────────────────────────
+  expense-service:
+    build:
+      context: ./backend/ExpenseService/SpendSmart.Expense.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-expense
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartExpenseDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Income Service ───────────────────────────────────────────
+  income-service:
+    build:
+      context: ./backend/IncomeService/SpendSmart.Income.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-income
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartIncomeDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Budget Service ───────────────────────────────────────────
+  budget-service:
+    build:
+      context: ./backend/BudgetService/SpendSmart.Budget.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-budget
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartBudgetDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ExpenseService__BaseUrl: "http://expense-service:80"
+      NotificationService__BaseUrl: "http://notification-service:80"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      expense-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Report Service ───────────────────────────────────────────
+  report-service:
+    build:
+      context: ./backend/ReportService/SpendSmart.Report.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-report
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartReportDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── Notification Service ─────────────────────────────────────
+  notification-service:
+    build:
+      context: ./backend/NotificationService/SpendSmart.Notification.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-notification
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=SpendSmartNotificationDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "${JWT_ISSUER}"
+      Jwt__Audience: "${JWT_AUDIENCE}"
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - backend-net
+    restart: on-failure
+
+  # ── API Gateway (YARP) ───────────────────────────────────────
+  gateway:
+    build:
+      context: ./backend/GatewayService/SpendSmart.Gateway.API
+      dockerfile: Dockerfile
+    container_name: spendsmart-gateway
+    depends_on:
+      - auth-service
+      - category-service
+      - expense-service
+      - income-service
+      - budget-service
+      - report-service
+      - notification-service
+    networks:
+      - backend-net
+      - frontend-net
+    restart: on-failure
+
+  # ── Angular Frontend (nginx) ─────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: spendsmart-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    networks:
+      - frontend-net
+    restart: on-failure

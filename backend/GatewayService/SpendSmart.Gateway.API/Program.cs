@@ -6,11 +6,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins("http://localhost:4200", "http://spendsmart-ui.azurewebsites.net", "https://spendsmart-ui.azurewebsites.net")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -20,7 +21,7 @@ builder.Services.AddReverseProxy()
 
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");
+app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "gateway" }));
 

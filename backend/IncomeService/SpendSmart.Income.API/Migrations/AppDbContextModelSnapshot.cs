@@ -51,6 +51,12 @@ namespace SpendSmart.Income.API.Migrations
                     b.Property<bool>("IsRecurring")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime?>("NextDueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecurrenceType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(100)

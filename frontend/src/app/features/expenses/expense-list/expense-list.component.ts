@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ExpenseService } from '../../../core/services/expense.service';
 import { CategoryService } from '../../../core/services/category.service';
+import { BudgetService } from '../../../core/services/budget.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Expense, Category, ExpenseFilter, PagedResult } from '../../../core/models/models';
@@ -221,6 +222,7 @@ import { Expense, Category, ExpenseFilter, PagedResult } from '../../../core/mod
 export class ExpenseListComponent implements OnInit {
   expenseService = inject(ExpenseService);
   categoryService = inject(CategoryService);
+  budgetService = inject(BudgetService);
   toast = inject(ToastService);
   authService = inject(AuthService);
   private fb = inject(FormBuilder);
@@ -305,7 +307,14 @@ export class ExpenseListComponent implements OnInit {
       : this.expenseService.createExpense(payload);
 
     obs.subscribe({
-      next: () => { this.toast.success(`Expense ${this.editMode() ? 'updated' : 'added'}!`); this.closeForm(); this.loadExpenses(); this.saving.set(false); },
+      next: () => { 
+        this.toast.success(`Expense ${this.editMode() ? 'updated' : 'added'}!`); 
+        this.closeForm(); 
+        this.loadExpenses(); 
+        this.saving.set(false); 
+        // Trigger budget calculation in the background
+        this.budgetService.getBudgets().subscribe();
+      },
       error: () => this.saving.set(false)
     });
   }
@@ -313,7 +322,12 @@ export class ExpenseListComponent implements OnInit {
   deleteExpense(e: Expense): void {
     if (!confirm(`Delete "${e.description}"?`)) return;
     this.expenseService.deleteExpense(e.expenseId).subscribe({
-      next: () => { this.toast.success('Expense deleted.'); this.loadExpenses(); }
+      next: () => { 
+        this.toast.success('Expense deleted.'); 
+        this.loadExpenses(); 
+        // Trigger budget calculation in the background
+        this.budgetService.getBudgets().subscribe();
+      }
     });
   }
 }

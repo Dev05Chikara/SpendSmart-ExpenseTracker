@@ -1,13 +1,32 @@
+## Root-level .dockerignore
+## Each service Dockerfile uses its own directory as build context,
+## so this file mainly guards against accidental large-context builds.
+
+# .NET build artifacts
 **/bin/
 **/obj/
 **/publish/
 **/*.user
 **/*.suo
-**/*.vs
-node_modules
-dist
-bin
-obj
-.vscode
+
+# Visual Studio / Rider IDE files
+**/.vs/
+**/.vscode/
+**/.idea/
+
+# Node / Angular
+node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Environment secrets
 .env
+
+# Git
+.git/
+.github/
+
+# OS noise
 .DS_Store
+Thumbs.db
+

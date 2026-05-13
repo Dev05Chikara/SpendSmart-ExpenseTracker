@@ -25,7 +25,7 @@ public class BudgetAlertDispatcherService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
 
         while (!stoppingToken.IsCancellationRequested)
         {

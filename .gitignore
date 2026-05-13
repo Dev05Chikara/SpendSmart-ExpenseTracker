@@ -52,3 +52,11 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# ─── Docker / Environment secrets ───────────────────────────
+.env
+
+# ─── Node / Angular ─────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.angular/cache/

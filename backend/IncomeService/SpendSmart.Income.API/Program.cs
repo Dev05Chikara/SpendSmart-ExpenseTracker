@@ -25,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add repositories and services
 builder.Services.AddScoped<IIncomeRepository, IncomeRepository>();
 builder.Services.AddScoped<IIncomeService, IncomeService>();
+builder.Services.AddHostedService<SpendSmart.Income.API.HostedServices.RecurringIncomeProcessorService>();
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];

@@ -16,12 +16,18 @@ public class BudgetService : IBudgetService
 {
     private readonly IBudgetRepository _repository;
     private readonly IExpenseIntegrationService _expenseIntegrationService;
+    private readonly ICategoryIntegrationService _categoryIntegrationService;
     private readonly ILogger<BudgetService> _logger;
 
-    public BudgetService(IBudgetRepository repository, IExpenseIntegrationService expenseIntegrationService, ILogger<BudgetService> logger)
+    public BudgetService(
+        IBudgetRepository repository,
+        IExpenseIntegrationService expenseIntegrationService,
+        ICategoryIntegrationService categoryIntegrationService,
+        ILogger<BudgetService> logger)
     {
         _repository = repository;
         _expenseIntegrationService = expenseIntegrationService;
+        _categoryIntegrationService = categoryIntegrationService;
         _logger = logger;
     }
 
@@ -89,12 +95,14 @@ public class BudgetService : IBudgetService
             foreach (var budget in budgets)
             {
                 ApplySpentData(budget, expenses);
+                budget.CategoryName = await _categoryIntegrationService.GetCategoryNameAsync(budget.CategoryId, authToken)
+                    ?? $"Category {budget.CategoryId}";
                 await QueueThresholdAlertsAsync(budget);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Expense integration failed while loading budgets. Returning stored budget values.");
+            _logger.LogWarning(ex, "Expense/Category integration failed while loading budgets. Returning stored budget values.");
         }
 
         return budgets;
@@ -106,11 +114,13 @@ public class BudgetService : IBudgetService
         {
             var expenses = await _expenseIntegrationService.GetUserExpensesAsync(authToken);
             ApplySpentData(budget, expenses);
+            budget.CategoryName = await _categoryIntegrationService.GetCategoryNameAsync(budget.CategoryId, authToken)
+                ?? $"Category {budget.CategoryId}";
             await QueueThresholdAlertsAsync(budget);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Expense integration failed while loading budget {BudgetId}. Returning stored budget values.", budget.BudgetId);
+            _logger.LogWarning(ex, "Expense/Category integration failed while loading budget {BudgetId}. Returning stored budget values.", budget.BudgetId);
         }
 
         return budget;
@@ -133,6 +143,9 @@ public class BudgetService : IBudgetService
     private async Task QueueThresholdAlertsAsync(BudgetResponse budget)
     {
         var thresholds = new[] { 80m, 100m };
+        var categoryLabel = string.IsNullOrWhiteSpace(budget.CategoryName)
+            ? $"Category {budget.CategoryId}"
+            : budget.CategoryName;
 
         foreach (var threshold in thresholds)
         {
@@ -149,8 +162,8 @@ public class BudgetService : IBudgetService
 
             var title = threshold >= 100m ? "Budget Breached" : "Budget Alert";
             var message = threshold >= 100m
-                ? $"Your budget for category {budget.CategoryId} has reached {budget.UsagePercentage:0.#}% of the limit."
-                : $"Your budget for category {budget.CategoryId} has reached {budget.UsagePercentage:0.#}% of the limit.";
+                ? $"Your budget for {categoryLabel} has exceeded the limit ({budget.UsagePercentage:0.#}% used)."
+                : $"Your budget for {categoryLabel} has reached {budget.UsagePercentage:0.#}% of the limit.";
 
             await _repository.EnqueueAlertAsync(new BudgetAlertOutbox
             {

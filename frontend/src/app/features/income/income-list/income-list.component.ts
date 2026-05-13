@@ -235,9 +235,10 @@ export class IncomeListComponent implements OnInit {
   save(): void {
     if (this.form.invalid) return;
     this.saving.set(true);
+    const payload = { ...this.form.value, recurrenceType: this.form.value.isRecurring ? this.form.value.recurrenceType : null } as any;
     const obs = this.editMode() && this.editingId
-      ? this.incomeService.updateIncome(this.editingId, this.form.value as any)
-      : this.incomeService.createIncome(this.form.value as any);
+      ? this.incomeService.updateIncome(this.editingId, payload)
+      : this.incomeService.createIncome(payload);
     obs.subscribe({ next: () => { this.toast.success('Income saved!'); this.closeForm(); this.load(); this.saving.set(false); }, error: () => this.saving.set(false) });
   }
 

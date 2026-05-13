@@ -11,6 +11,7 @@ public class IncomeResponse
     public string Description { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public bool IsRecurring { get; set; }
+    public string? RecurrenceType { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }

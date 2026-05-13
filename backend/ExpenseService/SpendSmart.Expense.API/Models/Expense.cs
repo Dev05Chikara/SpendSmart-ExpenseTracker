@@ -12,5 +12,6 @@ public class Expense
     public string? ReceiptUrl { get; set; }
     public bool IsRecurring { get; set; }
     public string? RecurrenceType { get; set; }
+    public DateTime? NextDueDate { get; set; }
     public bool IsActive { get; set; } = true;
 }

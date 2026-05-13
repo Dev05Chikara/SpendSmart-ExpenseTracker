@@ -56,6 +56,7 @@ public class ExpenseService : IExpenseService
             PaymentMode = request.PaymentMode,
             IsRecurring = request.IsRecurring,
             RecurrenceType = request.RecurrenceType,
+            NextDueDate = request.IsRecurring ? CalculateNextDueDate(request.Date, request.RecurrenceType) : null,
             IsActive = true
         };
 
@@ -79,6 +80,7 @@ public class ExpenseService : IExpenseService
         expense.PaymentMode = request.PaymentMode;
         expense.IsRecurring = request.IsRecurring;
         expense.RecurrenceType = request.RecurrenceType;
+        expense.NextDueDate = request.IsRecurring ? CalculateNextDueDate(request.Date, request.RecurrenceType) : null;
 
         await _repository.UpdateExpenseAsync(expense);
         return MapToResponse(expense);
@@ -104,6 +106,20 @@ public class ExpenseService : IExpenseService
             IsRecurring = expense.IsRecurring,
             RecurrenceType = expense.RecurrenceType,
             IsActive = expense.IsActive
+        };
+    }
+
+    public static DateTime? CalculateNextDueDate(DateTime date, string? recurrenceType)
+    {
+        if (string.IsNullOrEmpty(recurrenceType)) return null;
+
+        return recurrenceType.ToLower() switch
+        {
+            "daily" => date.AddDays(1),
+            "weekly" => date.AddDays(7),
+            "monthly" => date.AddMonths(1),
+            "yearly" => date.AddYears(1),
+            _ => null
         };
     }
 }

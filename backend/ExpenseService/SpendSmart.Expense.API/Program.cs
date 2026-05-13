@@ -25,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Add repositories and services
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddHostedService<SpendSmart.Expense.API.HostedServices.RecurringExpenseProcessorService>();
 
 // Configure JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];

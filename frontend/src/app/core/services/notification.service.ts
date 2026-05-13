@@ -56,7 +56,7 @@ export class NotificationService {
     void this.refreshNotifications();
     this.pollHandle = window.setInterval(() => {
       void this.refreshNotifications();
-    }, 30000);
+    }, 5000);
   }
 
   stopSignalR(): void {

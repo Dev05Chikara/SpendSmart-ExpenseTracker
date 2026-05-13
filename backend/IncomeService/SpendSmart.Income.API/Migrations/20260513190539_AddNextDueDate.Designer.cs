@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SpendSmart.Expense.API.Data;
+using SpendSmart.Income.API.Data;
 
 #nullable disable
 
-namespace SpendSmart.Expense.API.Migrations
+namespace SpendSmart.Income.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260513190539_AddNextDueDate")]
+    partial class AddNextDueDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,19 +25,20 @@ namespace SpendSmart.Expense.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("SpendSmart.Expense.API.Models.Expense", b =>
+            modelBuilder.Entity("SpendSmart.Income.API.Models.Income", b =>
                 {
-                    b.Property<int>("ExpenseId")
+                    b.Property<int>("IncomeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExpenseId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IncomeId"));
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
@@ -53,29 +57,29 @@ namespace SpendSmart.Expense.API.Migrations
                     b.Property<DateTime?>("NextDueDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("PaymentMode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ReceiptUrl")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("RecurrenceType")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("ExpenseId");
-
-                    b.HasIndex("UserId", "CategoryId")
-                        .HasDatabaseName("IX_Expense_UserId_CategoryId");
+                    b.HasKey("IncomeId");
 
                     b.HasIndex("UserId", "Date")
-                        .HasDatabaseName("IX_Expense_UserId_Date");
+                        .HasDatabaseName("IX_Income_UserId_Date");
 
-                    b.ToTable("Expenses");
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_Income_UserId_IsActive");
+
+                    b.ToTable("Incomes");
                 });
 #pragma warning restore 612, 618
         }

@@ -7,6 +7,7 @@ public class BudgetResponse
     public int BudgetId { get; set; }
     public int UserId { get; set; }
     public int CategoryId { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
     public decimal LimitAmount { get; set; }
     public decimal SpentAmount { get; set; }
     public string Period { get; set; } = string.Empty;

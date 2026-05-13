@@ -31,6 +31,13 @@ builder.Services.AddHttpClient<IExpenseIntegrationService, ExpenseIntegrationSer
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+var categoryBaseUrl = builder.Configuration["CategoryService:BaseUrl"] ?? "http://localhost:5004";
+builder.Services.AddHttpClient<ICategoryIntegrationService, CategoryIntegrationService>(client =>
+{
+    client.BaseAddress = new Uri(categoryBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];

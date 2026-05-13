@@ -11,6 +11,8 @@ public class Income
     public string Description { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public bool IsRecurring { get; set; }
+    public string? RecurrenceType { get; set; }
+    public DateTime? NextDueDate { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
