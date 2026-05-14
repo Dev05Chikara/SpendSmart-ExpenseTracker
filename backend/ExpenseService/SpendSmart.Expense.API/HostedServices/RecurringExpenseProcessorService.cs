@@ -23,8 +23,8 @@ public class RecurringExpenseProcessorService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Run every 30 seconds for fast auto-detection and processing
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+        // Run every hour
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -55,9 +55,9 @@ public class RecurringExpenseProcessorService : BackgroundService
 
         var now = DateTime.UtcNow;
 
-        // Find all active recurring expenses where NextDueDate has arrived OR is null (legacy records)
+        // Find all active recurring expenses where the next due date has arrived
         var pendingExpenses = dbContext.Expenses
-            .Where(e => e.IsActive && e.IsRecurring && (e.NextDueDate == null || e.NextDueDate <= now))
+            .Where(e => e.IsActive && e.IsRecurring && e.NextDueDate != null && e.NextDueDate <= now)
             .ToList();
 
         if (!pendingExpenses.Any())
@@ -67,12 +67,6 @@ public class RecurringExpenseProcessorService : BackgroundService
 
         foreach (var parent in pendingExpenses)
         {
-            // Initialize NextDueDate for legacy records created before the engine was deployed
-            if (parent.NextDueDate == null)
-            {
-                parent.NextDueDate = ExpenseService.CalculateNextDueDate(parent.Date, parent.RecurrenceType);
-            }
-
             // Process all missed occurrences until the NextDueDate is in the future
             while (parent.NextDueDate != null && parent.NextDueDate <= now)
             {
@@ -99,9 +93,6 @@ public class RecurringExpenseProcessorService : BackgroundService
             }
             
             dbContext.Expenses.Update(parent);
-            
-            // Save changes per parent to ensure partial success if one fails
-            await dbContext.SaveChangesAsync(stoppingToken);
         }
 
         await dbContext.SaveChangesAsync(stoppingToken);
